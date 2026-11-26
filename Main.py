@@ -96,6 +96,8 @@ PHONE_CHECKS = 0
 EMAIL_CHECKS = 0
 DEEP_RUNS = 0
 LAST = {}
+VAULT_FILE = "flint_vault.json"
+VAULT = {"sweeps": [], "phones": [], "emails": [], "ips": [], "web": [], "dorks": [], "deep": [], "archive": []}
 
 HDRS = {"User-Agent": UA}
 
@@ -503,7 +505,6 @@ def card(title, rows, w=56):
         if gap >= 0:
             print(HR + "│" + R + "  " + D + k.ljust(kw) + R + " " + str(v) + (" " * gap) + HR + "│" + R)
         else:
-            # value too long to fit, let it run past the edge instead of breaking the box
             print(HR + "│" + R + "  " + D + k.ljust(kw) + R + " " + str(v) + R)
     print(HR + "╰" + ("─" * (w - 2)) + "╯" + R)
 
@@ -620,6 +621,7 @@ def helpcmd():
     kv("ip", D + "rough geo, no keys" + R)
     kv("wayback", D + "does the archive have it" + R)
     kv("save", D + "last result → json · " + C + "last" + R + D + " shows it" + R)
+    kv("vault", D + "everything grabbed piles up here · " + C + "vault" + R + D + " writes " + C + "flint_vault.json" + R)
     kv("theme", D + "dark · light · mono, recolors everything live" + R)
     print()
     print("  " + D + "tricks: " + C + "search b0b only github,steam" + R + D + " · " + C + "search b0b fast" + R + D + " · " + C + "phone codes" + R)
@@ -738,6 +740,7 @@ def sweep(user, only=None, fast=False):
         oddlist.append([w[0], w[2]])
     when = str(datetime.datetime.now())[:16]
     LAST["sweep"] = {"user": user, "total": total, "found": found, "odd": oddlist, "when": when}
+    vault_add("sweeps", LAST["sweep"])
     SWEEPS_DONE += 1
     PROFILES_FOUND = PROFILES_FOUND + len(found)
 
@@ -947,6 +950,7 @@ def cmd_web(rest):
     WEB_SEARCHES = WEB_SEARCHES + 1
     when = str(datetime.date.today()) + " " + tstamp()
     LAST["web"] = {"q": rest, "got": got, "when": when}
+    vault_add("web", LAST["web"])
 
 
 def digitsonly(s):
@@ -1077,6 +1081,7 @@ def cmd_phone(rest):
 
     PHONE_CHECKS = PHONE_CHECKS + 1
     LAST["phone"] = {"number": full, "country": country, "digits": len(num), "when": str(datetime.datetime.now())[:16]}
+    vault_add("phones", LAST["phone"])
 
 
 def cmd_email(rest):
@@ -1149,6 +1154,7 @@ def cmd_email(rest):
 
     EMAIL_CHECKS = EMAIL_CHECKS + 1
     LAST["email"] = {"addr": a, "domkind": kind, "gravatar": h, "when": str(datetime.datetime.now())[:16]}
+    vault_add("emails", LAST["email"])
 
 
 def cmd_dork(rest):
@@ -1216,6 +1222,7 @@ def cmd_dork(rest):
             n = n + 1
     print()
     LAST["web"] = {"q": "dorks: " + q, "got": [[r[0], r[1], r[2]] for r in got], "when": str(datetime.date.today()) + " " + tstamp()}
+    vault_add("dorks", LAST["web"])
 
 
 def cmd_deep(rest):
@@ -1283,6 +1290,7 @@ def cmd_deep(rest):
     print()
     DEEP_RUNS = DEEP_RUNS + 1
     LAST["web"] = {"q": "deep: " + rest, "got": [[r[0], r[1], r[2]] for r in got], "when": str(datetime.date.today()) + " " + tstamp()}
+    vault_add("deep", LAST["web"])
 
 
 def cmd_ip(rest):
@@ -1356,6 +1364,7 @@ def cmd_ip(rest):
         print(" " + D + "city is a guess from the registry. the network name is the real signal" + R)
     print()
     LAST["ip"] = {"q": ip, "where": where, "when": str(datetime.datetime.now())[:16]}
+    vault_add("ips", LAST["ip"])
 
 
 def cmd_way(rest):
@@ -1390,6 +1399,117 @@ def cmd_way(rest):
     print(" " + D + "everything they kept:" + R)
     print("    " + B + "https://web.archive.org/web/*/" + u + R)
     print()
+    vault_add("archive", {"url": u, "snap": (snap.get("url", "") if snap else ""), "when": str(datetime.datetime.now())[:16]})
+
+def vault_add(kind, data):
+    entry = dict(data)
+    entry["kind"] = kind
+    VAULT[kind].append(entry)
+
+
+def vault_line(e):
+    k = e.get("kind", "")
+    if k == "sweeps":
+        return B + e.get("user", "?") + R + D + " · " + str(len(e.get("found", []))) + " hits of " + str(e.get("total", 0)) + R
+    if k == "phones":
+        return B + e.get("number", "?") + R + D + " · " + e.get("country", "?") + R
+    if k == "emails":
+        return B + e.get("addr", "?") + R + D + " · " + e.get("domkind", "?") + R
+    if k == "ips":
+        return B + e.get("q", "?") + R + D + " · " + (e.get("where") or "no luck") + R
+    if k == "archive":
+        return B + e.get("url", "?") + R + D + " · " + ("snapshot kept" if e.get("snap") else "nothing kept") + R
+    return B + e.get("q", "?") + R + D + " · " + str(len(e.get("got", []))) + " results" + R
+
+
+def vault_cmd(rest):
+    rest = rest.strip().lower()
+    total = 0
+    for k in VAULT:
+        total = total + len(VAULT[k])
+
+    old = {}
+    try:
+        f = open(VAULT_FILE, "r", encoding="utf-8")
+        old = json.load(f)
+        f.close()
+    except:
+        old = {}
+    olditems = {}
+    if type(old) == dict:
+        olditems = old.get("items", {})
+
+    if rest == "wipe":
+        for k in VAULT:
+            VAULT[k] = []
+        print(" " + tag("ok") + " vault emptied in memory. the file on disk stays until the next write")
+        print()
+        return
+
+    if rest == "show":
+        sect("what the vault holds")
+        if total == 0:
+            print("  nothing in it yet. run a search, phone, email, ip, web, anything")
+            print()
+            return
+        for k in VAULT:
+            if len(VAULT[k]) == 0:
+                continue
+            print("  " + HC + k + R + D + " (" + str(len(VAULT[k])) + ")" + R)
+            for e in VAULT[k][-5:]:
+                print("    " + D + "·" + R + " " + vault_line(e))
+            if len(VAULT[k]) > 5:
+                print("    " + D + "  and " + str(len(VAULT[k]) - 5) + " older ones" + R)
+        print()
+        print("  " + D + "vault writes the whole pile to " + C + VAULT_FILE + R)
+        print()
+        return
+
+    if total == 0:
+        got = 0
+        for k in olditems:
+            got = got + len(olditems[k])
+        if got == 0:
+            print(" nothing collected yet, and " + C + VAULT_FILE + R + " is empty or missing too")
+            print(" go run a " + C + "search" + R + " or a " + C + "phone" + R + " first, then vault picks it up")
+            print()
+            return
+        print(" nothing new this session, but the file already holds " + BOLD + str(got) + R + " things")
+        print(" " + D + "it'll get merged in proper the next time you collect something" + R)
+        print()
+        return
+
+    print(" " + D + "piling everything the tool has gotten into one json..." + R)
+    merged = {}
+    brought = 0
+    for k in VAULT:
+        merged[k] = list(VAULT[k])
+        for e in olditems.get(k, []):
+            if e not in merged[k]:
+                merged[k].append(e)
+                brought = brought + 1
+    try:
+        f = open(VAULT_FILE, "w", encoding="utf-8")
+        json.dump({"updated": str(datetime.datetime.now())[:19], "items": merged}, f, indent=2, ensure_ascii=False)
+        f.close()
+        rows = []
+        for k in sorted(merged):
+            if len(merged[k]) == 0:
+                continue
+            extra = ""
+            if brought > 0 and len(olditems.get(k, [])) > 0:
+                extra = D + " (+" + str(len(olditems[k])) + " from before)" + R
+            rows.append((k, GB + str(len(merged[k])) + R + D + " entries" + extra + R))
+        grand = 0
+        for k in merged:
+            grand = grand + len(merged[k])
+        rows.append(("total", BOLD + str(grand) + R + D + " things remembered" + R))
+        card("vault", rows)
+        print(" " + G + VAULT_FILE + R + " " + D + "written. plain json, opens with anything. the proper reader comes later" + R)
+        print()
+    except:
+        print(" " + RD + "couldn't write " + VAULT_FILE + ". folder read only? name taken? no idea" + R)
+        print()
 
 
 def save_results(rest):
@@ -1493,6 +1613,10 @@ def stats():
     kv("phone checks", W + str(PHONE_CHECKS), 14)
     kv("email checks", W + str(EMAIL_CHECKS), 14)
     kv("deep runs", W + str(DEEP_RUNS), 14)
+    vaultn = 0
+    for k in VAULT:
+        vaultn = vaultn + len(VAULT[k])
+    kv("vault items", W + str(vaultn), 14)
     kv("site list", W + str(len(SITES)) + R + D + " sites", 14)
     kv("code table", W + str(len(CCODES)) + R + D + " country codes", 14)
     kv("requests", W + ("loaded" if requests else "not installed"), 14)
@@ -1603,6 +1727,8 @@ def run():
             elif cmd == "sites": sites_list()
 
             elif cmd == "save": save_results(rest)
+
+            elif cmd in ("vault", "store"): vault_cmd(rest)
 
             elif cmd == "last": last_what()
 
