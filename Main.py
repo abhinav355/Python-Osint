@@ -1,4 +1,4 @@
-import sys, os, random, hashlib
+import sys, os, random, hashlib, re
 import time
 import datetime
 import json
@@ -11,22 +11,51 @@ except:
 
 
 UA = "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0"
-
 R    = "\033[0m"
 C    = "\033[96m"
 G    = "\033[92m"
 Y    = "\033[93m"
 B    = "\033[94m"
 M    = "\033[95m"
-D    = "\033[2m"
+D    = "\033[90m"
 RD   = "\033[91m"
 BOLD = "\033[1m"
+HC   = "\033[1;95m"
+GB   = "\033[1;92m"
+W    = "\033[97m"
+HR   = "\033[38;5;98m"
+GRAD = ["\033[1;96m", "\033[1;94m", "\033[1;95m", "\033[1;35m"]
 
 CONFIG = {
     "theme": "dark",
     "slow_type": True,
-    "timeout": 8,
+    "timeout": 8,}
+THEMES = {
+    "dark": {
+        "R": "\033[0m", "C": "\033[96m", "G": "\033[92m", "Y": "\033[93m",
+        "B": "\033[94m", "M": "\033[95m", "D": "\033[90m", "RD": "\033[91m",
+        "BOLD": "\033[1m", "HC": "\033[1;95m", "GB": "\033[1;92m", "W": "\033[97m",
+        "HR": "\033[38;5;98m",
+        "GRAD": ["\033[1;96m", "\033[1;94m", "\033[1;95m", "\033[1;35m"],
+    },
+    "light": {
+        "R": "\033[0m", "C": "\033[34m", "G": "\033[32m", "Y": "\033[33m",
+        "B": "\033[35m", "M": "\033[35m", "D": "\033[90m", "RD": "\033[31m",
+        "BOLD": "\033[1m", "HC": "\033[1;34m", "GB": "\033[1;32m", "W": "\033[30m",
+        "HR": "\033[38;5;61m",
+        "GRAD": ["\033[1;34m", "\033[1;35m", "\033[35m", "\033[34m"],
+    },
+    "mono": {
+        "R": "", "C": "", "G": "", "Y": "", "B": "", "M": "", "D": "", "RD": "",
+        "BOLD": "", "HC": "", "GB": "", "W": "", "HR": "",
+        "GRAD": ["", "", "", ""],
+    },
 }
+
+def apply_theme(name):
+    t = THEMES.get(name, THEMES["dark"])
+    globals().update(t)
+    globals()["PROMPT"] = t["HC"] + "»" + t["R"] + " "
 
 TAGLINES = [
     "public data only, relax",
@@ -56,7 +85,7 @@ LOGO = r"""
 ╚══════╝╚═╝  ╚═╝╚══════╝
 """
 
-PROMPT = C + "[?]" + R + " "
+PROMPT = HC + "»" + R + " "
 
 START = time.time()
 CMDS_RUN = 0
@@ -385,7 +414,6 @@ NUMLEN = {
     "966": 9,
     "90": 10,
 }
-
 MOBILESTART = {
     "44": "7",
     "61": "4",
@@ -396,9 +424,7 @@ MOBILESTART = {
     "34": "6 or 7",
     "27": "6, 7 or 8",
     "971": "5",
-    "92": "3",
-}
-
+    "92": "3",}
 NUMLINKS = [
     ("whatsapp", "https://wa.me/{}"),
     ("truecaller", "https://www.truecaller.com/search/global/{}"),
@@ -406,6 +432,12 @@ NUMLINKS = [
     ("google it", "https://www.google.com/search?q=%22{}%22"),
     ("bing it", "https://www.bing.com/search?q=%22{}%22"),
 ]
+
+
+
+
+
+
 
 FREEMAIL = [
     "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "live.com",
@@ -433,10 +465,63 @@ DORKBITS = [
 ]
 
 DEEPSEP = [".", "_", "-"]
+GROUPS = [
+    ("code & dev", ["github", "gitlab", "bitbucket", "codeberg", "sourceforge", "codepen", "dev.to", "hashnode", "replit", "codesandbox", "huggingface", "dockerhub", "npm", "pypi", "hackaday", "instructables", "thingiverse"]),
+    ("words", ["medium", "substack", "blogger", "wordpress", "goodreads", "wikipedia"]),
+    ("social", ["twitter", "instagram", "facebook", "linkedin", "reddit", "tiktok", "youtube", "twitch", "vimeo", "snapchat", "telegram", "vk", "mastodon", "bluesky", "pinterest", "tumblr", "imgur", "9gag", "quora", "about.me", "linktree", "biolink", "allmylinks", "carrd"]),
+    ("games", ["steam", "lichess", "chess", "osu", "speedrun", "itch", "gamejolt", "newgrounds", "duolingo"]),
+    ("pics & art", ["flickr", "500px", "deviantart", "artstation", "behance", "dribbble", "unsplash", "sketchfab"]),
+    ("sound & screen", ["soundcloud", "bandcamp", "mixcloud", "lastfm", "genius", "spotify", "trakt", "letterboxd", "myanimelist", "anilist", "vndb", "rateyourmusic", "mydramalist", "anime-planet", "boardgamegeek", "untappd"]),
+    ("money & stuff", ["patreon", "kofi", "buymeacoffee", "gumroad", "redbubble", "etsy", "ebay", "depop", "poshmark", "grailed", "paypal", "cashapp", "onlyfans"]),
+    ("the nerdy corners", ["kaggle", "hackerrank", "codeforces", "codewars", "exercism", "atcoder", "leetcode", "hackernews", "lobsters", "producthunt", "indiehackers", "keybase", "hackerone", "bugcrowd", "tryhackme", "archive.org"]),
+]
 
 
 def hr(n=56, ch="─"):
-    print(D + (ch * n) + R)
+    print(HR + (ch * n) + R)
+
+def sect(t):
+    print()
+    left = " " + t + " "
+    print(HR + "──" + HC + left + HR + ("─" * max(4, 56 - len(left) - 2)) + R)
+
+def kv(k, v, w=12):
+    print("  " + D + k.ljust(w) + R + " " + str(v))
+
+def vislen(s):
+    return len(re.sub(r"\033\[[0-9;]*m", "", s))
+
+def card(title, rows, w=56):
+    kw = 9
+    for k, v in rows:
+        if len(k) > kw:
+            kw = len(k)
+    print()
+    print(HR + "╭─" + R + HC + " " + title + " " + R + HR + ("─" * max(3, w - 5 - len(title))) + "╮" + R)
+    for k, v in rows:
+        gap = w - 5 - kw - vislen(str(v))
+        if gap >= 0:
+            print(HR + "│" + R + "  " + D + k.ljust(kw) + R + " " + str(v) + (" " * gap) + HR + "│" + R)
+        else:
+            # value too long to fit, let it run past the edge instead of breaking the box
+            print(HR + "│" + R + "  " + D + k.ljust(kw) + R + " " + str(v) + R)
+    print(HR + "╰" + ("─" * (w - 2)) + "╯" + R)
+
+def tag(kind):
+    m = {
+        "ok":   GB + "[+]" + R,
+        "meh":  Y + "[~]" + R,
+        "no":   RD + "[-]" + R,
+        "info": C + "[i]" + R,
+        "warn": Y + "[!]" + R,
+        "hmm":  D + "[?]" + R,
+    }
+    return m[kind]
+
+def bar(n, total, w=24):
+    filled = int(round(w * n / total))
+    pct = str(int(100 * n / total)).rjust(3)
+    return G + "█" * filled + D + "·" * (w - filled) + R + D + " " + pct + "% · " + str(n) + "/" + str(total) + R
 
 def pick(items):
     return random.choice(items)
@@ -511,62 +596,47 @@ def page_title(htm):
 
 
 def logo():
-    print(C + LOGO + R)
+    lines = LOGO.strip("\n").split("\n")
+    n = len(lines)
+    for i, ln in enumerate(lines):
+        c = GRAD[min(i * len(GRAD) // n, len(GRAD) - 1)]
+        print(c + ln + R)
 
 def welcome():
     slow(" oh hi. this is osint lab, it looks at public stuff and nothing else")
     print(" " + D + pick(TAGLINES) + R)
-    print(" " + D + "type " + C + "help" + R + D + " if you're lost" + R)
 
 
 def helpcmd():
+    sect("start with these four")
+    kv("search", C + "<username>" + R + D + " — find them across " + str(len(SITES)) + " sites" + R)
+    kv("phone", C + "<number>" + R + D + " — country, mobile or not" + R)
+    kv("email", C + "<address>" + R + D + " — pulled apart, gravatar peek" + R)
+    kv("web", C + "<words>" + R + D + " — search the web for you" + R)
+    sect("when you need more")
+    kv("dork", D + "google dorks · " + C + "dork <q> run" + R + D + " fetches" + R)
+    kv("deep", D + "same name, other shapes" + R)
+    kv("sites", D + "the site list, in piles" + R)
+    kv("ip", D + "rough geo, no keys" + R)
+    kv("wayback", D + "does the archive have it" + R)
+    kv("save", D + "last result → json · " + C + "last" + R + D + " shows it" + R)
+    kv("theme", D + "dark · light · mono, recolors everything live" + R)
     print()
-    print(" " + BOLD + "hunting" + R)
-    print("  " + C + "search" + R + " <user>       check a username on every site in the list")
-    print("  " + C + "search" + R + " <user> fast      first 30 sites only, quick peek")
-    print("  " + C + "search" + R + " <user> only github,steam     just those ones")
-    print("  " + C + "sites" + R + "           the whole list (" + str(len(SITES)) + " of them)")
-    print("  " + C + "save" + R + " [name]      last results out to a json file")
-    print("  " + C + "last" + R + "           what's sitting in memory right now")
-    print()
-    print(" " + BOLD + "numbers & mail" + R)
-    print("  " + C + "phone" + R + " <number>   country code, mobile or not, links to look it up")
-    print("  " + C + "phone" + R + " codes       the country code table (" + str(len(CCODES)) + " of them)")
-    print("  " + C + "email" + R + " <addr>     pull the address apart, gravatar peek, search links")
-    print()
-    print(" " + BOLD + "web" + R)
-    print("  " + C + "web" + R + " <query>     duckduckgo, bing if it sulks. no api keys")
-    print("  " + C + "g" + R + " <query>      same thing, less typing")
-    print("  " + C + "dork" + R + " <user>     google dorks ready to click, " + C + "dork <u> run" + R + " runs a few")
-    print("  " + C + "deep" + R + " <name>     same name, other shapes + web results")
-    print("  " + C + "ip" + R + " <addr>       rough geo off public registries, no keys")
-    print("  " + C + "wayback" + R + " <url>   does the archive have a copy of this page")
-    print()
-    print(" " + BOLD + "small stuff" + R)
-    print("  " + C + "tag" + R + "     random tagline      " + C + "about" + R + "     what this even is")
-    print("  " + C + "stats" + R + "   session numbers     " + C + "now" + R + "       date and time")
-    print("  " + C + "clear" + R + "   wipe the screen     " + C + "exit" + R + "      leave")
+    print("  " + D + "tricks: " + C + "search b0b only github,steam" + R + D + " · " + C + "search b0b fast" + R + D + " · " + C + "phone codes" + R)
     print()
 
 
 def about():
     print()
-    print(" " + BOLD + "osint lab" + R)
+    print(" " + HC + "osint lab" + R)
     print()
-    print(" small thing, runs local, only looks at public pages.")
-    print(" give it a username and it checks if that name exists on a")
-    print(" big pile of sites. give it words and it asks duckduckgo")
-    print(" for pages, bing if duckduckgo sulks.")
+    print(" " + D + "runs local, only looks at public pages. a username gets checked" + R)
+    print(" " + D + "on a big pile of sites, words get searched, a number gets read" + R)
+    print(" " + D + "apart, an email gets gravatar-checked. no logins, no keys, ever." + R)
     print()
-    print(" give it a phone number and it reads the country code, the")
-    print(" length, whether it starts like a mobile, and hands you the")
-    print(" links. give it an email and it pulls the address apart and")
-    print(" checks gravatar. no lookups behind any login, ever.")
+    print(" " + D + "a 200 status is a guess, not proof. treat every hit as a hint." + R)
     print()
-    print(" a 200 status is a good guess, not proof. some sites lie")
-    print(" about it. treat every hit as a hint.")
-    print()
-    print(" built it to find my own old accounts. don't be weird with it.")
+    print(" " + D + "built it to find my own old accounts. don't be weird with it." + R)
     print()
 
 
@@ -607,7 +677,7 @@ def sweep(user, only=None, fast=False):
 
     total = len(pool)
     print()
-    print(" " + D + pick(STATUS) + R + " checking " + str(total) + " sites for " + BOLD + user + R)
+    print(" " + D + pick(STATUS) + R + W + user + R + D + " on " + str(total) + " sites" + R)
     print()
     found = []
     odd = []
@@ -617,7 +687,7 @@ def sweep(user, only=None, fast=False):
         for site in pool:
             n = n + 1
             res = check_site(site, user)
-            sys.stdout.write("\r " + D + str(n) + "/" + str(total) + R + "        ")
+            sys.stdout.write("\r  " + bar(n, total) + "   ")
             sys.stdout.flush()
             if res == None:
                 miss = miss + 1
@@ -629,8 +699,8 @@ def sweep(user, only=None, fast=False):
                     miss = miss + 1
                 else:
                     found.append(res)
-                    print()
-                    print(" " + G + "+" + R + " " + C + res[0] + R + " " + B + res[1] + R)
+                    print("\r" + " " * 46)
+                    print(" " + tag("ok") + " " + HC + res[0] + R + " " + B + res[1] + R)
                     if res[3] != "":
                         print("     " + D + res[3] + R)
             else:
@@ -646,20 +716,22 @@ def sweep(user, only=None, fast=False):
     print()
     print()
     if len(found) == 0:
-        print(" " + Y + "[!]" + R + " " + pick(EMPTY))
-    else:
-        print(" " + G + "found on " + str(len(found)) + " out of " + str(total) + R)
-        if len(found) >= 3:
-            tip = pick(BIGFP)
-            tip = tip.replace("{n}", str(len(found)))
-            print(" " + M + "[i]" + R + " " + tip)
+        print(" " + tag("warn") + " " + pick(EMPTY))
+    elif len(found) >= 3:
+        tip = pick(BIGFP)
+        tip = tip.replace("{n}", str(len(found)))
+        print(" " + tag("info") + " " + tip)
     if len(odd) > 0:
         print()
         print(" " + D + "these ones answered something weird, blocked or grumpy:" + R)
         for w in odd:
-            print(" " + Y + "?" + R + " " + C + w[0].ljust(15) + R + " " + D + "status " + str(w[2]) + R)
-    print()
-    print(" " + D + str(total) + " checked, " + str(len(found)) + " hits, " + str(len(odd)) + " odd ones, " + str(miss) + " misses. " + C + "save" + R + " " + D + "writes it out" + R)
+            print(" " + tag("meh") + " " + C + w[0].ljust(15) + R + " " + D + "status " + str(w[2]) + R)
+    rows = [("hits", GB + str(len(found)) + R + D + " of " + str(total) + " checked" + R)]
+    if len(odd) > 0:
+        rows.append(("odd", str(len(odd)) + D + " blocked or grumpy (the [~] ones)" + R))
+    rows.append(("misses", str(miss)))
+    card("how it went", rows)
+    print(" " + D + C + "save" + R + " " + D + "writes it out, " + C + "last" + R + " " + D + "reminds you what this was" + R)
 
     oddlist = []
     for w in odd:
@@ -697,20 +769,47 @@ def cmd_search(rest):
 
 def sites_list():
     print()
-    print(" " + D + str(len(SITELIST)) + " sites in the list, search runs all of them" + R)
-    print()
-    line = "  "
-    i = 0
-    for s in SITELIST:
-        line = line + C + s[0].ljust(17) + R
-        i = i + 1
-        if i == 4:
+    print(" " + str(len(SITELIST)) + " sites in the list, search runs all of them, sorted into piles")
+    done = []
+    leftout = []
+    for gname, glist in GROUPS:
+        rows = []
+        for s in SITELIST:
+            if s[0] in glist and s[0] not in done:
+                rows.append(s[0])
+        if len(rows) == 0:
+            continue
+        done = done + rows
+        print("  " + HC + gname + R)
+        line = "    "
+        i = 0
+        for name in rows:
+            line = line + C + name.ljust(16) + R
+            i = i + 1
+            if i == 4:
+                print(line)
+                line = "    "
+                i = 0
+        if i > 0:
             print(line)
-            line = "  "
-            i = 0
-    if i > 0:
-        print(line)
-    print()
+        print()
+    for s in SITELIST:
+        if s[0] not in done:
+            leftout.append(s[0])
+    if len(leftout) > 0:
+        print("  " + D + "everything else" + R)
+        line = "    "
+        i = 0
+        for name in leftout:
+            line = line + C + name.ljust(16) + R
+            i = i + 1
+            if i == 4:
+                print(line)
+                line = "    "
+                i = 0
+        if i > 0:
+            print(line)
+        print()
     print(" " + D + "tip: " + C + "search <user> only github,reddit" + R + " " + D + "picks just those" + R)
     print()
 
@@ -802,14 +901,14 @@ def bing_lookup(q):
 def show_web(got, q):
     print()
     if len(got) == 0:
-        print(" " + Y + "[!]" + R + " nothing came back. try different words maybe")
+        print(" " + tag("warn") + " nothing came back. try different words maybe")
         print()
         return
     print(" " + D + str(len(got)) + " results for" + R + " " + BOLD + q + R)
     print()
     n = 1
     for r in got:
-        print(" " + G + str(n) + "." + R + " " + BOLD + r[0] + R)
+        print(" " + GB + str(n) + "." + R + " " + W + r[0] + R)
         print("    " + B + r[1] + R)
         if r[2] != "":
             print("    " + D + r[2][:170] + R)
@@ -920,7 +1019,7 @@ def cmd_phone(rest):
             break
 
     if cc == None:
-        print(" " + Y + "?" + R + " i don't recognize " + BOLD + num[:3] + R + " as a country code i know.")
+        print(" " + tag("hmm") + " i don't recognize " + BOLD + num[:3] + R + " as a country code i know.")
         print("   still reading the rest of it, but take the country with salt.")
         print("   what i do have: " + C + "phone codes" + R)
         print()
@@ -930,7 +1029,7 @@ def cmd_phone(rest):
     else:
         country = CCODES[cc]
         restn = num[len(cc):]
-
+                                        
     pretty = "+" + cc if cc else ""
     i = 0
     while i < len(restn):
@@ -938,36 +1037,34 @@ def cmd_phone(rest):
         pretty = pretty + " " + restn[i:i + take]
         i = i + take
 
-    print("  country     " + BOLD + country + (R + " " + D + "(+" + cc + ")" + R if cc else R))
-    print("  looks like  " + B + pretty.strip() + R)
-    print("  digits      " + str(len(num)) + " total" + (D + " (" + str(len(restn)) + " after the code)" + R if cc else ""))
-
+    rows = [
+        ("country", BOLD + country + (R + " " + D + "(+" + cc + ")" + R if cc else R)),
+        ("looks like", B + pretty.strip() + R),
+        ("digits", str(len(num)) + " total" + (D + " (" + str(len(restn)) + " after the code)" + R if cc else "")),
+    ]
     if cc != "" and cc in NUMLEN:
         want = NUMLEN[cc]
         got = len(restn)
         if got == want:
-            print("  length      " + G + str(got) + R + " after the code, that matches the " + str(want) + " i expected for +" + cc)
+            rows.append(("length", G + str(got) + R + D + " — matches the " + str(want) + " expected for +" + cc + R))
         else:
-            print("  length      " + Y + str(got) + R + " after the code, i expected " + str(want) + " for +" + cc + ". typo or a weird plan, who knows")
-
+            rows.append(("length", Y + str(got) + R + D + " — expected " + str(want) + " for +" + cc + ", typo?" + R))
     if cc != "" and cc in MOBILESTART:
         starts = []
         for chx in MOBILESTART[cc]:
             if chx.isdigit():
                 starts.append(chx)
         if restn[:1] in starts:
-            print("  type        " + G + "starts like a mobile" + R + " " + D + "(" + MOBILESTART[cc] + " are the usual openers for +" + cc + ")" + R)
+            rows.append(("type", G + "starts like a mobile" + R))
         else:
-            print("  type        " + D + "doesn't start like the usual mobile for +" + cc + ". landline, voip or virtual, probably" + R)
+            rows.append(("type", D + "not a usual mobile opener for +" + cc + R))
     elif cc != "":
-        print("  type        " + D + "no mobile-pattern note for +" + cc + " in my table, sorry" + R)
-
-    if cc != "" and cc not in NUMLEN and cc not in MOBILESTART:
-        print("  " + D + "(i only keep length/mobile notes for the big countries)" + R)
+        rows.append(("type", D + "no mobile-pattern note for +" + cc + R))
+    card("what the digits say", rows)
 
     full = "+" + num
     print()
-    print(" " + D + "no lookups here, no logins. these are just doors to knock on:" + R)
+    print(" " + D + "no lookups, no logins — just doors:" + R)
     for label, tpl in NUMLINKS:
         if label == "whatsapp":
             link = tpl.format(num)
@@ -975,7 +1072,7 @@ def cmd_phone(rest):
             link = tpl.format("%2B" + num)
         print("  " + C + label.ljust(12) + R + " " + B + link + R)
     print()
-    print(" " + D + "tip: also google the digits in groups, like " + C + '"0712 345"' + R + D + ". people write them all sorts of ways" + R)
+    print(" " + D + "tip: google the digits in groups too, people write them every which way" + R)
     print()
 
     PHONE_CHECKS = PHONE_CHECKS + 1
@@ -999,24 +1096,26 @@ def cmd_email(rest):
         print(" empty on one side of the @. that goes nowhere")
         return
     if "." not in dom:
-        print(" " + Y + "?" + R + " domain " + BOLD + dom + R + " has no dot, so no mail server would answer it. typo?")
+        print(" " + tag("hmm") + " domain " + BOLD + dom + R + " has no dot, so no mail server would answer it. typo?")
         print()
         kind = "broken looking"
     else:
         tld = dom.rsplit(".", 1)[1]
-        print("  address     " + B + a + R)
-        print("  local part  " + local + "  " + D + "(" + str(len(local)) + " chars" + (" + dots" if "." in local else "") + (" + plus-tag" if "+" in local else "") + ")" + R)
-        print("  domain      " + dom + "  " + D + "(tld ." + tld + ")" + R)
+        rows = [
+            ("address", B + a + R),
+            ("local part", local + "  " + D + "(" + str(len(local)) + " chars" + (" + dots" if "." in local else "") + (" + plus-tag" if "+" in local else "") + ")" + R),
+            ("domain", dom + "  " + D + "(tld ." + tld + ")" + R),
+        ]
         if dom in FREEMAIL:
             kind = "free mail"
-            print("  kind        " + C + kind + R + D + " — big provider, millions of these, tells you almost nothing by itself" + R)
+            rows.append(("kind", C + kind + R + D + " — big provider, tells you nothing alone" + R))
         elif dom in DISPOSABLE:
             kind = "throwaway"
-            print("  kind        " + Y + kind + R + D + " — burner mail. whoever made it didn't plan on being found" + R)
+            rows.append(("kind", Y + kind + R + D + " — burner mail" + R))
         else:
             kind = "own domain"
-            print("  kind        kind of its own thing. company, school or a personal domain")
-            print("  " + D + "worth a look at " + C + "http://" + dom + R + D + " and their mx records somewhere like mxtoolbox" + R)
+            rows.append(("kind", D + "company, school or personal domain" + R))
+        card("the address", rows)
         if "+" in local:
             print("  " + D + "the +" + local.split("+", 1)[1] + " part is a gmail tag — strip it, it's the same mailbox: " + C + local.split("+", 1)[0] + "@" + dom + R)
         if "." in local and dom in FREEMAIL:
@@ -1027,9 +1126,9 @@ def cmd_email(rest):
     h = hashlib.md5(a.encode("utf-8")).hexdigest()
     r = geturl("https://www.gravatar.com/avatar/" + h + "?d=404&s=80", 8)
     if r == None:
-        print(" " + Y + "?" + R + " couldn't reach gravatar at all. skip it")
+        print(" " + tag("hmm") + " couldn't reach gravatar at all. skip it")
     elif r.status_code == 200:
-        print(" " + G + "+" + R + " there's a gravatar on this address. " + B + "https://gravatar.com/" + h + R)
+        print(" " + tag("ok") + " there's a gravatar on this address. " + B + "https://gravatar.com/" + h + R)
         prof = geturl("https://gravatar.com/" + h, 8)
         if prof != None and prof.status_code == 200:
             t = page_title(prof.text)
@@ -1046,8 +1145,6 @@ def cmd_email(rest):
                        ("pastebin dork", "https://www.google.com/search?q=%22{}%22+site%3Apastebin.com")]:
         link = tpl.replace("{}", qurl(a).replace("+", "%20"))
         print("  " + C + label.ljust(12) + R + " " + B + link + R)
-    print()
-    print(" " + D + "no breach lists here — those need keys or logins and this thing doesn't do that" + R)
     print()
 
     EMAIL_CHECKS = EMAIL_CHECKS + 1
@@ -1071,8 +1168,8 @@ def cmd_dork(rest):
         print(" that's just 'run', gimme something to search")
         return
     quoted = '"' + q + '"'
-    print()
-    print(" " + D + "dorks for" + R + " " + BOLD + q + R + D + ", click them or let me run a few" + R)
+    sect("dorks for " + q)
+    print(" " + D + "click them or let me run a few" + R)
     print()
     for label, tpl in DORKBITS:
         query = tpl.replace("{u}", quoted)
@@ -1106,13 +1203,13 @@ def cmd_dork(rest):
         time.sleep(random.randint(3, 8) / 10)
     print()
     if len(got) == 0:
-        print(" " + Y + "[!]" + R + " nothing came back. ddg mood, probably. try the google links above")
+        print(" " + tag("warn") + " nothing came back. ddg mood, probably. try the google links above")
     else:
-        print(" " + G + str(len(got)) + " unique results" + R)
+        print(" " + GB + str(len(got)) + " unique results" + R)
         print()
         n = 1
         for r in got[:12]:
-            print(" " + G + str(n) + "." + R + " " + BOLD + r[0] + R + " " + D + "[" + r[3] + "]" + R)
+            print(" " + GB + str(n) + "." + R + " " + W + r[0] + R + " " + D + "[" + r[3] + "]" + R)
             print("    " + B + r[1] + R)
             if r[2] != "":
                 print("    " + D + r[2][:170] + R)
@@ -1146,7 +1243,7 @@ def cmd_deep(rest):
         if s not in uniq:
             uniq.append(s)
     print()
-    print(" " + D + "shapes to try (guesses, not findings):" + R)
+    print(D + (" shapes to try, none of this is proof ").ljust(56, "─") + R)
     line = "  "
     for s in uniq:
         chunk = C + s.ljust(20) + R
@@ -1172,13 +1269,13 @@ def cmd_deep(rest):
         time.sleep(random.randint(3, 8) / 10)
     print()
     if len(got) == 0:
-        print(" " + Y + "[!]" + R + " quiet out there. maybe the name's too generic or too rare, both go badly")
+        print(" " + tag("warn") + " quiet out there. maybe the name's too generic or too rare, both go badly")
     else:
-        print(" " + G + str(len(got)) + " unique hits" + R)
+        print(" " + GB + str(len(got)) + " unique hits" + R)
         print()
         n = 1
         for r in got[:12]:
-            print(" " + G + str(n) + "." + R + " " + BOLD + r[0] + R + " " + D + "[shape: " + r[3] + "]" + R)
+            print(" " + GB + str(n) + "." + R + " " + W + r[0] + R + " " + D + "[shape: " + r[3] + "]" + R)
             print("    " + B + r[1] + R)
             if r[2] != "":
                 print("    " + D + r[2][:170] + R)
@@ -1234,27 +1331,29 @@ def cmd_ip(rest):
                 data = {}
     print()
     if data == {}:
-        print(" " + Y + "[!]" + R + " both registries shrugged. private range? typo? or they just don't like me today")
+        print(" " + tag("warn") + " both registries shrugged. private range? typo? or they just don't like me today")
         print()
         return
+    rows = []
     where = ""
     if data.get("country"):
         where = data.get("city", "") + ", " + data["country"] if data.get("city") else data["country"]
-        print("  country     " + BOLD + data["country"] + R)
+        rows.append(("country", BOLD + data["country"] + R))
     if data.get("region"):
-        print("  region      " + data["region"])
+        rows.append(("region", data["region"]))
     if data.get("city"):
-        print("  city        " + data["city"])
+        rows.append(("city", data["city"]))
     if data.get("org"):
-        print("  network     " + C + str(data["org"]) + R)
+        rows.append(("network", C + str(data["org"]) + R))
     if data.get("hostname"):
-        print("  hostname    " + data["hostname"])
+        rows.append(("hostname", data["hostname"]))
     if data.get("loc") and "," in str(data.get("loc")):
         lat, lon = str(data["loc"]).split(",", 1)
         if lat and lon:
-            print("  pin         " + B + "https://www.google.com/maps?q=" + lat + "," + lon + R)
+            rows.append(("pin", B + "https://www.google.com/maps?q=" + lat + "," + lon + R))
+    card("where it lives", rows)
     if where != "":
-        print("  " + D + "city is a guess from the registry. the network name is the real signal" + R)
+        print(" " + D + "city is a guess from the registry. the network name is the real signal" + R)
     print()
     LAST["ip"] = {"q": ip, "where": where, "when": str(datetime.datetime.now())[:16]}
 
@@ -1283,15 +1382,13 @@ def cmd_way(rest):
     if snap:
         when = snap.get("timestamp", "?")
         nice = when[:4] + "-" + when[4:6] + "-" + when[6:8] if len(when) >= 8 else when
-        print(" " + G + "+" + R + " yep, it has a copy from " + BOLD + nice + R)
+        print(" " + tag("ok") + " yep, it has a copy from " + BOLD + nice + R)
         print("    " + B + snap.get("url", "") + R)
     else:
-        print(" " + Y + "[!]" + R + " nothing saved that i can see. doesn't mean never, just means not that url")
+        print(" " + tag("warn") + " nothing saved that i can see. doesn't mean never, just means not that url")
     print()
-    print(" " + D + "wanna browse everything they kept:" + R)
+    print(" " + D + "everything they kept:" + R)
     print("    " + B + "https://web.archive.org/web/*/" + u + R)
-    print(" " + D + "and the cdx index if you like lists:" + R)
-    print("    " + B + "https://web.archive.org/cdx/search/cdx?url=" + u.replace("://", "://") + "&output=text&limit=40" + R)
     print()
 
 
@@ -1326,7 +1423,7 @@ def save_results(rest):
 
 
 def last_what():
-    print()
+    sect("in memory right now")
     if len(LAST) == 0:
         print(" memory's empty, run a search or a web thing first")
         print()
@@ -1354,6 +1451,21 @@ def last_what():
 def tagline():
     print(" " + Y + pick(TAGLINES) + R)
 
+def theme_cmd(rest):
+    t = rest.strip().lower()
+    if t == "":
+        names = " · ".join(sorted(THEMES))
+        print(" themes: " + C + names + R)
+        print(" " + D + "now on " + HC + CONFIG["theme"] + R + D + ". try " + C + "theme light" + R + D + ", or " + C + "theme mono" + R + D + " for no colors at all" + R)
+        return
+    if t not in THEMES:
+        print(" " + tag("meh") + " don't have that one. " + C + "theme" + R + D + " alone lists them" + R)
+        return
+    apply_theme(t)
+    CONFIG["theme"] = t
+    print(" " + tag("ok") + " switched to " + HC + t + R + D + " — logo redrawn so you can see the difference" + R)
+    logo()
+
 def nowcmd():
     print(" " + G + str(datetime.datetime.now())[:19] + R)
 
@@ -1372,17 +1484,20 @@ def stats():
     except:
         h = m = s = 0
     print()
-    print(f"  uptime        {h}h {m}m {s}s")
-    print(f"  commands run  {CMDS_RUN}")
-    print(f"  sweeps done   {SWEEPS_DONE}")
-    print(f"  profiles hit  {PROFILES_FOUND}")
-    print(f"  web searches  {WEB_SEARCHES}")
-    print(f"  phone checks  {PHONE_CHECKS}")
-    print(f"  email checks  {EMAIL_CHECKS}")
-    print(f"  deep runs     {DEEP_RUNS}")
-    print(f"  site list     {len(SITES)} sites")
-    print(f"  code table    {len(CCODES)} country codes")
-    print(f"  requests lib  {'loaded' if requests else 'not installed'}")
+    hr()
+    kv("uptime", W + str(h) + "h " + str(m) + "m " + str(s) + "s", 14)
+    kv("commands", W + str(CMDS_RUN), 14)
+    kv("sweeps", W + str(SWEEPS_DONE), 14)
+    kv("profiles hit", W + str(PROFILES_FOUND), 14)
+    kv("web searches", W + str(WEB_SEARCHES), 14)
+    kv("phone checks", W + str(PHONE_CHECKS), 14)
+    kv("email checks", W + str(EMAIL_CHECKS), 14)
+    kv("deep runs", W + str(DEEP_RUNS), 14)
+    kv("site list", W + str(len(SITES)) + R + D + " sites", 14)
+    kv("code table", W + str(len(CCODES)) + R + D + " country codes", 14)
+    kv("requests", W + ("loaded" if requests else "not installed"), 14)
+    hr()
+    print(" " + D + "counting the boring things since you said hi" + R)
     print()
 
 
@@ -1416,12 +1531,17 @@ def bye():
 def boot():
     if os.name == "nt":
         os.system("")
+    apply_theme(CONFIG["theme"])
     logo()
     hr()
     welcome()
-    hr()
+    sect("start with these four")
+    kv("search", C + "<username>" + R + D + "  — find them across " + str(len(SITES)) + " sites" + R)
+    kv("phone", C + "<number>" + R + D + "  — country, mobile or not, lookup links" + R)
+    kv("email", C + "<address>" + R + D + "  — pulled apart, gravatar peek" + R)
+    kv("web", C + "<words>" + R + D + "  — search the web for you" + R)
     print()
-    print(" " + D + "try " + C + "search <username>" + R + " " + D + "or " + C + "web <query>" + R + D + ", " + C + "help" + R + D + " for the rest" + R)
+    print(" " + D + "everything else lives in " + C + "help" + R + D + ". leave with " + C + "exit" + R)
     print()
 
 
@@ -1453,7 +1573,7 @@ def run():
                 bye()
                 break
 
-            elif cmd == "help":
+            elif cmd in ("help", "menu"):
                 helpcmd()
 
             elif cmd in ("search", "find", "hunt", "sweep"):
@@ -1495,6 +1615,8 @@ def run():
             elif cmd in ("now", "time"): nowcmd()
 
             elif cmd in ("clear", "cls"): wipe()
+
+            elif cmd == "theme": theme_cmd(rest)
 
             else:
                 unknown(cmd)
