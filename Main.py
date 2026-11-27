@@ -622,7 +622,7 @@ def helpcmd():
     kv("wayback", D + "does the archive have it" + R)
     kv("save", D + "last result -> json * " + C + "last" + R + D + " shows it" + R)
     kv("vault", D + "everything grabbed piles up here * " + C + "vault" + R + D + " writes " + C + "flint_vault.json" + R)
-    kv("ai", D + "reads the saved json files back * " + C + "ai" + R + D + " then pick a number or all" + R)
+    kv("ai", D + "pick saved json files * " + C + "ai" + R + D + " then pick 3,5,4,7 or all * they go to Ai.py" + R)
     kv("theme", D + "dark * light * mono, recolors everything live" + R)
     print()
     print("  " + D + "tricks: " + C + "search b0b only github,steam" + R + D + " * " + C + "search b0b fast" + R + D + " * " + C + "phone codes" + R)
@@ -1786,7 +1786,8 @@ def vault_cmd(rest):
         print()
 
 
-# the ai command lives here: no real brain yet, later update. for now it finds the saved json files, you pick one (or all) and it reads them out
+
+
 AISAYS = [
     "no brain in here yet, but the eyes work",
     "the smart part comes later. reading is free though",
@@ -1888,6 +1889,56 @@ def ai_read_one(fname):
         print("   " + ln)
 
 
+def ai_pick(files, pickn):
+    picked = []
+    pickn = pickn.replace(" ", ",")
+    for bit in pickn.split(","):
+        if bit == "":
+            continue
+        num = ""
+        for ch in bit:
+            if ch.isdigit():
+                num = num + ch
+        if num == "":
+            continue
+        n = int(num)
+        if n >= 1 and n <= len(files):
+            if n not in picked:
+                picked.append(n)
+    return picked
+
+
+def ai_send(names):
+    if len(names) == 0:
+        print(" " + tag("meh") + " nothing got picked, so nothing to send")
+        print()
+        return
+    if len(names) == 1:
+        print(" " + D + "picked: " + C + names[0] + R)
+    else:
+        print(" " + D + "picked " + str(len(names)) + " files: " + C + ", ".join(names) + R)
+    print()
+    if os.path.exists("Ai.py"):
+        py = "python" if os.name == "nt" else "python3"
+        args = ""
+        for name in names:
+            args = args + " " + name
+        print(" " + D + "handing the files over to Ai.py..." + R)
+        try:
+            os.system(py + " Ai.py" + args)
+        except:
+            print(" " + RD + "couldn't launch Ai.py. weird" + R)
+        print(" " + D + "back from Ai.py" + R)
+        print()
+        return
+    print(" " + Y + "Ai.py isn't a thing yet, that's the next update" + R)
+    print(" " + D + "these would be sent over: " + C + ", ".join(names) + R)
+    print(" " + D + "so i'll just read them out myself for now..." + R)
+    for name in names:
+        ai_read_one(name)
+    print()
+
+
 def cmd_ai(rest):
     print()
     print(" " + Y + pick(AISAYS) + R)
@@ -1902,8 +1953,7 @@ def cmd_ai(rest):
             files.append(name)
     files.sort()
     if rest != "" and rest.endswith(".json") and rest in files:
-        ai_read_one(rest)
-        print()
+        ai_send([rest])
         return
     if len(files) == 0:
         print(" no json files lying around yet. run a " + C + "search" + R + ", " + C + "deep" + R + " or " + C + "vault" + R + " first, or " + C + "save" + R)
@@ -1924,7 +1974,7 @@ def cmd_ai(rest):
         pickn = rest
     else:
         try:
-            pickn = input("  which one? a number, or " + BOLD + "all" + R + " to read every file (enter = all) ").strip().lower()
+            pickn = input("  which one? numbers comma apart like " + BOLD + "3,5,4,7" + R + " * one number * or " + BOLD + "all" + R + " (enter = all) ").strip().lower()
         except EOFError:
             pickn = "all"
         except KeyboardInterrupt:
@@ -1933,29 +1983,22 @@ def cmd_ai(rest):
     if pickn == "":
         pickn = "all"
     if pickn == "all":
-        print(" " + D + "reading every file, one by one..." + R)
+        picked = []
+        n = 1
         for name in files:
-            ai_read_one(name)
-        print()
-        print(" " + D + "that's everything on disk. the thinking part hooks in right here later" + R)
-        print()
-        return
-    num = ""
-    for ch in pickn:
-        if ch.isdigit():
-            num = num + ch
-    if num == "":
-        print(" " + tag("meh") + " that's not a number and not 'all'. nothing read")
+            picked.append(n)
+            n = n + 1
+    else:
+        picked = ai_pick(files, pickn)
+    if len(picked) == 0:
+        print(" " + tag("meh") + " didn't catch any file numbers in there. nothing picked")
+        print(" " + D + "like: " + C + "3,5,4,7" + R + D + " or one number or all" + R)
         print()
         return
-    if int(num) < 1 or int(num) > len(files):
-        print(" " + tag("meh") + " no file with that number. pick between 1 and " + str(len(files)))
-        print()
-        return
-    ai_read_one(files[int(num) - 1])
-    print()
-    print(" " + D + "want the rest? " + C + "ai" + R + " " + D + "again and answer all" + R)
-    print()
+    names = []
+    for n in picked:
+        names.append(files[n - 1])
+    ai_send(names)
 
 
 def save_results(rest):
