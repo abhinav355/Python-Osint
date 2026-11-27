@@ -97,7 +97,7 @@ EMAIL_CHECKS = 0
 DEEP_RUNS = 0
 LAST = {}
 VAULT_FILE = "flint_vault.json"
-VAULT = {"sweeps": [], "phones": [], "emails": [], "ips": [], "web": [], "dorks": [], "deep": [], "archive": []}
+VAULT = {"sweeps": [], "phones": [], "emails": [], "ips": [], "web": [], "dorks": [], "deep": [], "archive": [], "plans": []}
 
 HDRS = {"User-Agent": UA}
 
@@ -522,7 +522,7 @@ def tag(kind):
 def bar(n, total, w=24):
     filled = int(round(w * n / total))
     pct = str(int(100 * n / total)).rjust(3)
-    return G + "█" * filled + D + "·" * (w - filled) + R + D + " " + pct + "% · " + str(n) + "/" + str(total) + R
+    return G + "" * filled + D + "*" * (w - filled) + R + D + " " + pct + "% * " + str(n) + "/" + str(total) + R
 
 def pick(items):
     return random.choice(items)
@@ -610,21 +610,21 @@ def welcome():
 
 def helpcmd():
     sect("start with these four")
-    kv("search", C + "<username>" + R + D + " — find them across " + str(len(SITES)) + " sites" + R)
-    kv("phone", C + "<number>" + R + D + " — country, mobile or not" + R)
-    kv("email", C + "<address>" + R + D + " — pulled apart, gravatar peek" + R)
-    kv("web", C + "<words>" + R + D + " — search the web for you" + R)
+    kv("search", C + "<username>" + R + D + " - find them across " + str(len(SITES)) + " sites" + R)
+    kv("phone", C + "<number>" + R + D + " - country, mobile or not" + R)
+    kv("email", C + "<address>" + R + D + " - pulled apart, gravatar peek" + R)
+    kv("web", C + "<words>" + R + D + " - search the web for you" + R)
     sect("when you need more")
-    kv("dork", D + "google dorks · " + C + "dork <q> run" + R + D + " fetches" + R)
-    kv("deep", D + "same name, other shapes" + R)
+    kv("dork", D + "google dorks * " + C + "dork <q> run" + R + D + " fetches" + R)
+    kv("deep", D + "multi step plan for a name * asks one by one * graph at the end" + R)
     kv("sites", D + "the site list, in piles" + R)
     kv("ip", D + "rough geo, no keys" + R)
     kv("wayback", D + "does the archive have it" + R)
-    kv("save", D + "last result → json · " + C + "last" + R + D + " shows it" + R)
-    kv("vault", D + "everything grabbed piles up here · " + C + "vault" + R + D + " writes " + C + "flint_vault.json" + R)
-    kv("theme", D + "dark · light · mono, recolors everything live" + R)
+    kv("save", D + "last result -> json * " + C + "last" + R + D + " shows it" + R)
+    kv("vault", D + "everything grabbed piles up here * " + C + "vault" + R + D + " writes " + C + "flint_vault.json" + R)
+    kv("theme", D + "dark * light * mono, recolors everything live" + R)
     print()
-    print("  " + D + "tricks: " + C + "search b0b only github,steam" + R + D + " · " + C + "search b0b fast" + R + D + " · " + C + "phone codes" + R)
+    print("  " + D + "tricks: " + C + "search b0b only github,steam" + R + D + " * " + C + "search b0b fast" + R + D + " * " + C + "phone codes" + R)
     print()
 
 
@@ -1050,9 +1050,9 @@ def cmd_phone(rest):
         want = NUMLEN[cc]
         got = len(restn)
         if got == want:
-            rows.append(("length", G + str(got) + R + D + " — matches the " + str(want) + " expected for +" + cc + R))
+            rows.append(("length", G + str(got) + R + D + " - matches the " + str(want) + " expected for +" + cc + R))
         else:
-            rows.append(("length", Y + str(got) + R + D + " — expected " + str(want) + " for +" + cc + ", typo?" + R))
+            rows.append(("length", Y + str(got) + R + D + " - expected " + str(want) + " for +" + cc + ", typo?" + R))
     if cc != "" and cc in MOBILESTART:
         starts = []
         for chx in MOBILESTART[cc]:
@@ -1068,7 +1068,7 @@ def cmd_phone(rest):
 
     full = "+" + num
     print()
-    print(" " + D + "no lookups, no logins — just doors:" + R)
+    print(" " + D + "no lookups, no logins - just doors:" + R)
     for label, tpl in NUMLINKS:
         if label == "whatsapp":
             link = tpl.format(num)
@@ -1113,18 +1113,18 @@ def cmd_email(rest):
         ]
         if dom in FREEMAIL:
             kind = "free mail"
-            rows.append(("kind", C + kind + R + D + " — big provider, tells you nothing alone" + R))
+            rows.append(("kind", C + kind + R + D + " - big provider, tells you nothing alone" + R))
         elif dom in DISPOSABLE:
             kind = "throwaway"
-            rows.append(("kind", Y + kind + R + D + " — burner mail" + R))
+            rows.append(("kind", Y + kind + R + D + " - burner mail" + R))
         else:
             kind = "own domain"
             rows.append(("kind", D + "company, school or personal domain" + R))
         card("the address", rows)
         if "+" in local:
-            print("  " + D + "the +" + local.split("+", 1)[1] + " part is a gmail tag — strip it, it's the same mailbox: " + C + local.split("+", 1)[0] + "@" + dom + R)
+            print("  " + D + "the +" + local.split("+", 1)[1] + " part is a gmail tag - strip it, it's the same mailbox: " + C + local.split("+", 1)[0] + "@" + dom + R)
         if "." in local and dom in FREEMAIL:
-            print("  " + D + "gmail ignores dots — " + C + local.replace(".", "") + "@" + dom + R + D + " is the same inbox" + R)
+            print("  " + D + "gmail ignores dots - " + C + local.replace(".", "") + "@" + dom + R + D + " is the same inbox" + R)
 
     print()
     print(" " + D + "gravatar check..." + R)
@@ -1198,7 +1198,7 @@ def cmd_dork(rest):
     seen = []
     for label, tpl in DORKBITS[:4]:
         query = tpl.replace("{u}", quoted)
-        print(" " + D + "· " + label + R)
+        print(" " + D + "* " + label + R)
         res = ddg_lookup(query)
         for r in res:
             if r[1] in seen:
@@ -1225,72 +1225,343 @@ def cmd_dork(rest):
     vault_add("dorks", LAST["web"])
 
 
-def cmd_deep(rest):
-    global DEEP_RUNS
-    if requests == None:
-        print(" no requests, no deep. pip install requests first")
-        return
-    bits = rest.split()
-    if len(bits) == 0:
-        print(" usage: deep <name>   (one word or 'first last')")
-        print(" like: " + C + "deep john smith" + R + " " + D + "builds the shapes and searches them" + R)
-        return
-    if len(bits) >= 2:
-        f = bits[0].lstrip("@")
-        l = bits[-1]
-        shapes = [f + l, f + "." + l, f + "_" + l, f + "-" + l, l + f, f[0] + l, f + "." + l[:1], f + l[:1]]
-        print(" " + D + "two words, so making the usual combinations" + R)
+
+
+                
+DEEPTAGS = [
+    "the slow way. more steps, more stuff",
+    "building the plan out of whatever you gave me",
+    "we go digging properly this time",
+    "one step at a time, no rushing",
+    "same drill as always: plan, poke, write it down",
+]
+
+DEEPEDGE = ["~", "=", "*", "+", "#", ":", "<", ""]
+DEEPPALETTE = ["\033[38;5;39m", "\033[38;5;41m", "\033[38;5;45m", "\033[38;5;51m",
+               "\033[38;5;87m", "\033[38;5;99m", "\033[38;5;111m", "\033[38;5;147m",
+               "\033[38;5;170m", "\033[38;5;176m", "\033[38;5;183m", "\033[38;5;205m",
+               "\033[38;5;212m", "\033[38;5;219m", "\033[38;5;198m"]               
+
+BIGSITES = ["github", "twitter", "instagram", "reddit", "youtube", "tiktok",
+            "telegram", "steam", "medium", "linktree", "pinterest", "soundcloud"]
+
+
+def deep_styler(state):
+    state["edge"] = random.choice(DEEPEDGE)
+    state["c1"] = random.choice(DEEPPALETTE)
+    state["c2"] = random.choice(DEEPPALETTE)
+    state["c3"] = random.choice(DEEPPALETTE)
+    while state["c2"] == state["c1"]:
+        state["c2"] = random.choice(DEEPPALETTE)
+    while state["c3"] == state["c1"] or state["c3"] == state["c2"]:
+        state["c3"] = random.choice(DEEPPALETTE)
+
+
+def deep_head(state, text):
+    e = state["edge"]
+    print()
+    print(state["c1"] + (e * 3) + " " + text.upper() + " " + (e * 3) + R)
+    print(state["c1"] + (e * (len(text) + 8)) + R)
+
+
+def deep_ask(state, text):
+    try:
+        a = input(state["c2"] + " " + state["edge"] + R + " " + text + " ").strip().lower()
+    except EOFError:
+        print()
+        return "n"
+    except KeyboardInterrupt:
+        print()
+        return "q"
+    if a == "":
+        return "y"
+    if a.startswith("n"):
+        return "n"
+    if a.startswith("q"):
+        return "q"
+    return "y"
+
+
+def step_read(state):
+    deep_head(state, "step * reading the name")
+    w = state["words"]
+    name = state["name"]
+    if len(w) == 1:
+        state["notes"].append("one word, probably a handle not a real name")
+        print("  one word -> handle style, less likely a real name")
     else:
-        u = bits[0].lstrip("@")
+        state["notes"].append(str(len(w)) + " words, could be a real name")
+        print("  " + str(len(w)) + " words -> could be a real name, shapes will matter")
+    hasdig = False
+    for chx in name:
+        if chx.isdigit():
+            hasdig = True
+    if hasdig:
+        state["notes"].append("has digits, old handle smell, maybe a birthyear")
+        print("  has digits -> old handle smell, maybe a birthyear in there")
+    else:
+        state["notes"].append("no digits, maybe a newer account")
+        print("  no digits -> cleaner handle, maybe a newer account")
+    if "_" in name or "-" in name or "." in name:
+        state["notes"].append("separator in the name, common pattern")
+        print("  has a separator -> common style, worth keeping as-is too")
+    short = name.replace(" ", "")
+    if len(short) <= 3:
+        state["notes"].append("very short handle, rare")
+        print("  very short -> rare, good for searching")
+    if len(short) > 15:
+        state["notes"].append("long handle, fewer false hits expected")
+        print("  long handle -> fewer false hits expected")
+    if name.lower() != name:
+        state["notes"].append("mixed caps, most sites fold it to lowercase anyway")
+        print("  mixed caps -> sites lowercase it anyway, search the lower form")
+    print("  notes so far: " + str(len(state["notes"])))
+
+
+def step_shapes(state):
+    deep_head(state, "step * username shapes")
+    w = state["words"]
+    shapes = []
+    if len(w) >= 2:
+        f = w[0]
+        l = w[-1]
+        shapes = [f + l, f + "." + l, f + "_" + l, f + "-" + l, l + f, f[0] + l, f + "." + l[:1], f + l[:1]]
+        print("  two words, so mixing them the usual ways")
+    else:
+        u = w[0]
         shapes = [u, u + "_", "_" + u, u + "-", "the" + u, u + u[-1:]]
-        print(" " + D + "one word, so poking at it with decoration. half of these will be garbage" + R)
-    seen = []
+        print("  one word, so poking it with decoration")
     uniq = []
     for s in shapes:
         if s not in uniq:
             uniq.append(s)
-    print()
-    print(D + (" shapes to try, none of this is proof ").ljust(56, "─") + R)
-    line = "  "
+    state["shapes"] = uniq
+    line = "   "
     for s in uniq:
-        chunk = C + s.ljust(20) + R
-        if len(line) + len(s) > 74:
+        line = line + state["c3"] + s + R + "  "
+        if len(line) > 70:
             print(line)
-            line = "  "
-        line = line + chunk + "  "
-    print(line)
-    print()
-    print(" " + D + "tip: run any of them through " + C + "search <shape>" + R + D + " for the full site sweep" + R)
-    print()
-    print(" " + D + "asking ddg about the first few..." + R)
-    got = []
-    seenlinks = []
-    for s in uniq[:4]:
-        print(" " + D + "· " + s + R)
-        for res in ddg_lookup('"' + s + '" profile'):
-            if res[1] in seenlinks:
-                continue
-            seenlinks.append(res[1])
-            res.append(s)
-            got.append(res)
+            line = "   "
+    if line.strip() != "":
+        print(line)
+    print("  " + D + "asking ddg about the first few shapes..." + R)
+    gotn = 0
+    for s in uniq[:3]:
+        res = ddg_lookup('"' + s + '" profile')
+        for r in res:
+            state["links"].append([r[0], r[1], r[2], s])
+            gotn = gotn + 1
         time.sleep(random.randint(3, 8) / 10)
-    print()
-    if len(got) == 0:
-        print(" " + tag("warn") + " quiet out there. maybe the name's too generic or too rare, both go badly")
+    state["counts"]["shapes"] = gotn
+    print("  shapes made: " + str(len(uniq)) + " * links back: " + str(gotn))
+
+
+def step_sites(state):
+    deep_head(state, "step * poking the big sites")
+    if requests == None:
+        print("  " + Y + "no requests lib, this step can't run. pip install requests" + R)
+        state["counts"]["sites"] = 0
+        return
+    u = state["words"][0].lstrip("@")
+    if len(state["words"]) >= 2:
+        u = state["words"][0] + state["words"][1]
+    pool = []
+    for s in SITES:
+        if s[0] in BIGSITES:
+            pool.append(s)
+    print("  " + D + "checking " + W + u + R + D + " on " + str(len(pool)) + " busy sites..." + R)
+    hits = 0
+    for site in pool:
+        res = check_site(site, u)
+        if res == None:
+            continue
+        if res[2] == 200:
+            low = res[3].lower()
+            if "not found" in low or "doesn't exist" in low or "page not found" in low:
+                pass
+            else:
+                state["hits"].append(res)
+                hits = hits + 1
+                print("  " + tag("ok") + " " + HC + res[0] + R + " " + B + res[1] + R)
+        time.sleep(random.randint(2, 6) / 10)
+    state["counts"]["sites"] = hits
+    print("  site hits: " + str(hits))
+
+
+def step_dorks(state):
+    deep_head(state, "step * the dork pile")
+    q = state["name"]
+    gotn = 0
+    seen = []
+    for label, tpl in DORKBITS[:3]:
+        query = tpl.replace("{u}", '"' + q + '"')
+        print("  " + D + "* " + label + R)
+        res = ddg_lookup(query)
+        for r in res:
+            if r[1] in seen:
+                continue
+            seen.append(r[1])
+            state["links"].append([r[0], r[1], r[2], label])
+            gotn = gotn + 1
+        time.sleep(random.randint(3, 8) / 10)
+    state["counts"]["dorks"] = gotn
+    print("  fresh links: " + str(gotn))
+
+
+def step_web(state):
+    deep_head(state, "step * plain web pile")
+    q = '"' + state["name"] + '"'
+    if len(state["words"]) >= 2:
+        q = q + ' OR "' + state["words"][0] + " " + state["words"][1] + '" profile'
+    print("  " + D + "searching: " + q + R)
+    res = ddg_lookup(q)
+    gotn = 0
+    for r in res[:8]:
+        state["links"].append([r[0], r[1], r[2], "web"])
+        gotn = gotn + 1
+    state["counts"]["web"] = gotn
+    print("  links: " + str(gotn))
+
+
+STEPFUNC = {"read": step_read, "shapes": step_shapes, "sites": step_sites,
+            "dorks": step_dorks, "web": step_web}
+
+
+def build_plan(state):
+    plan = []
+    plan.append(["read", "read the name first, see what we're even dealing with"])
+    plan.append(["shapes", "build username shapes and search them"])
+    if requests != None:
+        plan.append(["sites", "poke the big sites with the main handle"])
+        plan.append(["dorks", "run the dork pile, pastebin code and docs"])
+        plan.append(["web", "plain web search around the plain name"])
     else:
-        print(" " + GB + str(len(got)) + " unique hits" + R)
-        print()
-        n = 1
-        for r in got[:12]:
-            print(" " + GB + str(n) + "." + R + " " + W + r[0] + R + " " + D + "[shape: " + r[3] + "]" + R)
-            print("    " + B + r[1] + R)
-            if r[2] != "":
-                print("    " + D + r[2][:170] + R)
-            n = n + 1
+        state["notes"].append("no requests lib, so every net step is off")
+    return plan
+
+
+def deep_chart(state):
+    e = state["edge"]
     print()
+    print(state["c1"] + (e * 58) + R)
+    print(state["c1"] + "   THE PICTURE SO FAR" + R)
+    print(state["c1"] + (e * 58) + R)
+    counts = state["counts"]
+    if len(counts) == 0:
+        print()
+        print("  " + D + "no counting steps ran, so no graph. run it again and answer y to the net steps" + R)
+    biggest = 1
+    for k in counts:
+        if counts[k] > biggest:
+            biggest = counts[k]
+    print()
+    print("  " + D + "what each step pulled in (bar graph)" + R)
+    print()
+    for k in counts:
+        n = counts[k]
+        fill = int(round(24 * n / biggest))
+        col = random.choice(DEEPPALETTE)
+        print("  " + col + k.ljust(8) + R + " " + col + ("" * fill) + R + D + ("*" * (24 - fill)) + R + " " + str(n))
+    total = 0
+    for k in counts:
+        total = total + counts[k]
+    print()
+    print("  " + D + "how the pile grew while the steps ran (each row is one step)" + R)
+    print()
+    run = 0
+    i = 1
+    for k in counts:
+        run = run + counts[k]
+        fill = 0
+        if total > 0:
+            fill = int(round(40 * run / total))
+        print("  " + D + str(i).rjust(2) + R + " " + state["c3"] + ("" * fill) + R + D + ("*" * (40 - fill)) + R + " " + str(run))
+        i = i + 1
+    print()
+    print("  links in the bag: " + BOLD + str(len(state["links"])) + R)
+    print("  notes made: " + str(len(state["notes"])))
+    print("  site hits: " + str(len(state["hits"])))
+    print()
+    if len(state["links"]) > 0:
+        print("  " + D + "top of the link pile:" + R)
+        shown = 0
+        for r in state["links"]:
+            if shown == 8:
+                break
+            print("   " + state["c3"] + str(shown + 1) + "." + R + " " + W + r[0][:70] + R)
+            print("      " + B + r[1][:90] + R)
+            shown = shown + 1
+        print()
+    if total == 0 and len(state["links"]) == 0:
+        print("  " + tag("warn") + " nothing stuck. rare name, or a quiet day on the internet")
+    elif len(state["links"]) >= 10:
+        print("  " + tag("ok") + " " + pick(BIGFP).replace("{n}", str(len(state["links"]))))
+    else:
+        print("  " + tag("info") + " " + pick(DEEPTAGS))
+    print()
+
+
+def cmd_deep(rest):
+    global DEEP_RUNS
+    bits = rest.split()
+    if len(bits) == 0:
+        print(" usage: deep <name or username>")
+        print(" like: " + C + "deep john smith" + R + " " + D + "or a handle: " + C + "deep b0bthegoldfish" + R)
+        print(" " + D + "it builds a plan, runs it step by step, asks before each one, saves it all" + R)
+        return
+    state = {}
+    state["name"] = rest.strip().lstrip("@")
+    state["words"] = rest.split()
+    state["notes"] = []
+    state["shapes"] = []
+    state["links"] = []
+    state["hits"] = []
+    state["counts"] = {}
+    state["steps_done"] = []
+    deep_styler(state)
+    print()
+    print(" " + D + pick(DEEPTAGS) + R)
+    plan = build_plan(state)
+    e = state["edge"]
+    print()
+    print(state["c2"] + (e * 4) + " THE PLAN " + (e * 4) + R)
+    n = 1
+    for step in plan:
+        print("  " + state["c2"] + str(n) + "." + R + " " + W + step[0] + R + D + " - " + step[1] + R)
+        n = n + 1
+    print("  " + D + "i ask before every step. enter = go, n = skip, q = stop and keep what we got" + R)
+    print()
+    i = 0
+    for step in plan:
+        i = i + 1
+        a = deep_ask(state, "run step " + str(i) + "/" + str(len(plan)) + " (" + step[0] + ")? [enter = yes / n = skip / q = stop]")
+        if a == "n":
+            print(" " + D + "skipping " + step[0] + R)
+            continue
+        if a == "q":
+            print(" " + Y + "ok, stopping the plan, keeping everything we got so far" + R)
+            break
+        try:
+            STEPFUNC[step[0]](state)
+        except KeyboardInterrupt:
+            print()
+            print(" " + Y + "cut that step short, moving on" + R)
+        state["steps_done"].append(step[0])
+        print()
+    deep_chart(state)
     DEEP_RUNS = DEEP_RUNS + 1
-    LAST["web"] = {"q": "deep: " + rest, "got": [[r[0], r[1], r[2]] for r in got], "when": str(datetime.date.today()) + " " + tstamp()}
-    vault_add("deep", LAST["web"])
+    linkout = []
+    for r in state["links"]:
+        linkout.append([r[0], r[1], r[2], r[3]])
+    hitout = []
+    for h in state["hits"]:
+        hitout.append([h[0], h[1]])
+    LAST["deep"] = {"name": state["name"], "steps": state["steps_done"], "notes": state["notes"],
+                    "shapes": state["shapes"], "links": linkout, "site_hits": hitout,
+                    "when": str(datetime.datetime.now())[:16]}
+    vault_add("plans", LAST["deep"])
+    print(" " + D + "all of it went into the vault. " + C + "vault" + R + " " + D + "writes the json, " + C + "last" + R + " " + D + "reminds you" + R)
+    print()
 
 
 def cmd_ip(rest):
@@ -1410,16 +1681,18 @@ def vault_add(kind, data):
 def vault_line(e):
     k = e.get("kind", "")
     if k == "sweeps":
-        return B + e.get("user", "?") + R + D + " · " + str(len(e.get("found", []))) + " hits of " + str(e.get("total", 0)) + R
+        return B + e.get("user", "?") + R + D + " * " + str(len(e.get("found", []))) + " hits of " + str(e.get("total", 0)) + R
     if k == "phones":
-        return B + e.get("number", "?") + R + D + " · " + e.get("country", "?") + R
+        return B + e.get("number", "?") + R + D + " * " + e.get("country", "?") + R
     if k == "emails":
-        return B + e.get("addr", "?") + R + D + " · " + e.get("domkind", "?") + R
+        return B + e.get("addr", "?") + R + D + " * " + e.get("domkind", "?") + R
     if k == "ips":
-        return B + e.get("q", "?") + R + D + " · " + (e.get("where") or "no luck") + R
+        return B + e.get("q", "?") + R + D + " * " + (e.get("where") or "no luck") + R
     if k == "archive":
-        return B + e.get("url", "?") + R + D + " · " + ("snapshot kept" if e.get("snap") else "nothing kept") + R
-    return B + e.get("q", "?") + R + D + " · " + str(len(e.get("got", []))) + " results" + R
+        return B + e.get("url", "?") + R + D + " * " + ("snapshot kept" if e.get("snap") else "nothing kept") + R
+    if k == "plans":
+        return B + e.get("name", "?") + R + D + " * " + str(len(e.get("links", []))) + " links * " + str(len(e.get("steps", []))) + " steps ran" + R
+    return B + e.get("q", "?") + R + D + " * " + str(len(e.get("got", []))) + " results" + R
 
 
 def vault_cmd(rest):
@@ -1457,7 +1730,7 @@ def vault_cmd(rest):
                 continue
             print("  " + HC + k + R + D + " (" + str(len(VAULT[k])) + ")" + R)
             for e in VAULT[k][-5:]:
-                print("    " + D + "·" + R + " " + vault_line(e))
+                print("    " + D + "*" + R + " " + vault_line(e))
             if len(VAULT[k]) > 5:
                 print("    " + D + "  and " + str(len(VAULT[k]) - 5) + " older ones" + R)
         print()
@@ -1514,7 +1787,7 @@ def vault_cmd(rest):
 
 def save_results(rest):
     data = None
-    for k in ("sweep", "phone", "email", "ip", "web"):
+    for k in ("sweep", "phone", "email", "ip", "web", "deep"):
         if k in LAST:
             data = LAST[k]
             break
@@ -1529,6 +1802,8 @@ def save_results(rest):
         fname = "phone_" + data["number"].strip("+") + ".json"
     elif "addr" in data:
         fname = "email_" + data["addr"].split("@")[0] + ".json"
+    elif "name" in data:
+        fname = "deep_" + data["name"].replace(" ", "_") + ".json"
     elif "q" in data:
         fname = "web_" + tstamp().replace(":", "") + ".json"
     else:
@@ -1550,19 +1825,22 @@ def last_what():
         return
     if "sweep" in LAST:
         sw = LAST["sweep"]
-        print("  sweep   " + B + sw["user"] + R + " · " + str(len(sw["found"])) + " hits of " + str(sw["total"]) + " · " + sw["when"])
+        print("  sweep   " + B + sw["user"] + R + " * " + str(len(sw["found"])) + " hits of " + str(sw["total"]) + " * " + sw["when"])
     if "phone" in LAST:
         ph = LAST["phone"]
-        print("  phone   " + B + ph["number"] + R + " · " + ph["country"] + " · " + ph["when"])
+        print("  phone   " + B + ph["number"] + R + " * " + ph["country"] + " * " + ph["when"])
     if "email" in LAST:
         em = LAST["email"]
-        print("  email   " + B + em["addr"] + R + " · " + em["domkind"] + " · " + em["when"])
+        print("  email   " + B + em["addr"] + R + " * " + em["domkind"] + " * " + em["when"])
     if "ip" in LAST:
         ipr = LAST["ip"]
-        print("  ip      " + B + ipr["q"] + R + " · " + (ipr["where"] if ipr["where"] else "no luck") + " · " + ipr["when"])
+        print("  ip      " + B + ipr["q"] + R + " * " + (ipr["where"] if ipr["where"] else "no luck") + " * " + ipr["when"])
+    if "deep" in LAST:
+        dp = LAST["deep"]
+        print("  deep    " + B + dp["name"] + R + " * " + str(len(dp["links"])) + " links * " + str(len(dp["steps"])) + " steps ran * " + dp["when"])
     if "web" in LAST:
         wb = LAST["web"]
-        print("  web     \"" + wb["q"] + "\" · " + str(len(wb["got"])) + " results · " + wb["when"])
+        print("  web     \"" + wb["q"] + "\" * " + str(len(wb["got"])) + " results * " + wb["when"])
     print()
     print(" " + D + "the " + C + "save" + R + " " + D + "command writes it to a json file" + R)
     print()
@@ -1574,7 +1852,7 @@ def tagline():
 def theme_cmd(rest):
     t = rest.strip().lower()
     if t == "":
-        names = " · ".join(sorted(THEMES))
+        names = " * ".join(sorted(THEMES))
         print(" themes: " + C + names + R)
         print(" " + D + "now on " + HC + CONFIG["theme"] + R + D + ". try " + C + "theme light" + R + D + ", or " + C + "theme mono" + R + D + " for no colors at all" + R)
         return
@@ -1583,7 +1861,7 @@ def theme_cmd(rest):
         return
     apply_theme(t)
     CONFIG["theme"] = t
-    print(" " + tag("ok") + " switched to " + HC + t + R + D + " — logo redrawn so you can see the difference" + R)
+    print(" " + tag("ok") + " switched to " + HC + t + R + D + " - logo redrawn so you can see the difference" + R)
     logo()
 
 def nowcmd():
@@ -1660,10 +1938,10 @@ def boot():
     hr()
     welcome()
     sect("start with these four")
-    kv("search", C + "<username>" + R + D + "  — find them across " + str(len(SITES)) + " sites" + R)
-    kv("phone", C + "<number>" + R + D + "  — country, mobile or not, lookup links" + R)
-    kv("email", C + "<address>" + R + D + "  — pulled apart, gravatar peek" + R)
-    kv("web", C + "<words>" + R + D + "  — search the web for you" + R)
+    kv("search", C + "<username>" + R + D + "  - find them across " + str(len(SITES)) + " sites" + R)
+    kv("phone", C + "<number>" + R + D + "  - country, mobile or not, lookup links" + R)
+    kv("email", C + "<address>" + R + D + "  - pulled apart, gravatar peek" + R)
+    kv("web", C + "<words>" + R + D + "  - search the web for you" + R)
     print()
     print(" " + D + "everything else lives in " + C + "help" + R + D + ". leave with " + C + "exit" + R)
     print()
