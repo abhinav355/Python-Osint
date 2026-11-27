@@ -622,6 +622,7 @@ def helpcmd():
     kv("wayback", D + "does the archive have it" + R)
     kv("save", D + "last result -> json * " + C + "last" + R + D + " shows it" + R)
     kv("vault", D + "everything grabbed piles up here * " + C + "vault" + R + D + " writes " + C + "flint_vault.json" + R)
+    kv("ai", D + "reads the saved json files back * " + C + "ai" + R + D + " then pick a number or all" + R)
     kv("theme", D + "dark * light * mono, recolors everything live" + R)
     print()
     print("  " + D + "tricks: " + C + "search b0b only github,steam" + R + D + " * " + C + "search b0b fast" + R + D + " * " + C + "phone codes" + R)
@@ -1785,6 +1786,178 @@ def vault_cmd(rest):
         print()
 
 
+# the ai command lives here: no real brain yet, later update. for now it finds the saved json files, you pick one (or all) and it reads them out
+AISAYS = [
+    "no brain in here yet, but the eyes work",
+    "the smart part comes later. reading is free though",
+    "i can read. thinking is scheduled for a later update",
+    "poking through the folder for now, real ai later",
+]
+
+
+def ai_summary(data):
+    lines = []
+    if type(data) != dict:
+        return lines
+    if "items" in data:
+        piles = data["items"]
+        if type(piles) != dict:
+            return lines
+        for k in piles:
+            if len(piles[k]) > 0:
+                lines.append("pile " + k + " holds " + str(len(piles[k])) + " things")
+        for k in piles:
+            if k == "plans" and len(piles[k]) > 0:
+                for p in piles[k]:
+                    lines.append("  plan: " + str(p.get("name", "?")) + " * " + str(len(p.get("links", []))) + " links")
+            if k == "sweeps" and len(piles[k]) > 0:
+                for p in piles[k]:
+                    lines.append("  sweep: " + str(p.get("user", "?")) + " * " + str(len(p.get("found", []))) + " hits")
+            if k == "phones" and len(piles[k]) > 0:
+                for p in piles[k]:
+                    lines.append("  phone: " + str(p.get("number", "?")) + " * " + str(p.get("country", "?")))
+            if k == "emails" and len(piles[k]) > 0:
+                for p in piles[k]:
+                    lines.append("  email: " + str(p.get("addr", "?")))
+            if k == "ips" and len(piles[k]) > 0:
+                for p in piles[k]:
+                    lines.append("  ip: " + str(p.get("q", "?")) + " * " + str(p.get("where") or "no luck"))
+        return lines
+    if "user" in data:
+        names = []
+        for fnd in data.get("found", []):
+            if len(fnd) > 0:
+                names.append(str(fnd[0]))
+        lines.append("sweep of " + str(data.get("user", "?")) + " at " + str(data.get("when", "?")))
+        if len(names) > 0:
+            lines.append("hits on: " + ", ".join(names))
+        else:
+            lines.append("no hits kept in this one")
+        return lines
+    if "number" in data:
+        lines.append("phone check of " + str(data.get("number", "?")) + " at " + str(data.get("when", "?")))
+        lines.append("country guess: " + str(data.get("country", "?")))
+        return lines
+    if "addr" in data:
+        lines.append("email check of " + str(data.get("addr", "?")) + " at " + str(data.get("when", "?")))
+        lines.append("kind: " + str(data.get("domkind", "?")))
+        return lines
+    if "name" in data:
+        lines.append("deep plan for " + str(data.get("name", "?")) + " at " + str(data.get("when", "?")))
+        if len(data.get("steps", [])) > 0:
+            lines.append("steps ran: " + ", ".join(data.get("steps", [])))
+        lines.append(str(len(data.get("links", []))) + " links in the bag")
+        shown = 0
+        for r in data.get("links", []):
+            if shown == 5:
+                break
+            if len(r) > 1:
+                lines.append("  - " + str(r[0])[:70] + " -> " + str(r[1])[:60])
+            shown = shown + 1
+        return lines
+    if "q" in data:
+        got = data.get("got", [])
+        lines.append("web search \"" + str(data.get("q", "?")) + "\" at " + str(data.get("when", "?")))
+        lines.append(str(len(got)) + " results kept")
+        shown = 0
+        for r in got:
+            if shown == 5:
+                break
+            if len(r) > 1:
+                lines.append("  - " + str(r[0])[:70] + " -> " + str(r[1])[:60])
+            shown = shown + 1
+        return lines
+    return lines
+
+
+def ai_read_one(fname):
+    print()
+    print(" " + C + fname + R)
+    try:
+        f = open(fname, "r", encoding="utf-8")
+        data = json.load(f)
+        f.close()
+    except:
+        print("   " + Y + "couldn't read that one. broken json? weird file?" + R)
+        return
+    lines = ai_summary(data)
+    if len(lines) == 0:
+        print("   " + D + "read it, but i don't recognize what's inside. it's still in there though" + R)
+        return
+    for ln in lines:
+        print("   " + ln)
+
+
+def cmd_ai(rest):
+    print()
+    print(" " + Y + pick(AISAYS) + R)
+    rest = rest.strip()
+    files = []
+    try:
+        everything = os.listdir(".")
+    except:
+        everything = []
+    for name in everything:
+        if name.endswith(".json") and os.path.isfile(name):
+            files.append(name)
+    files.sort()
+    if rest != "" and rest.endswith(".json") and rest in files:
+        ai_read_one(rest)
+        print()
+        return
+    if len(files) == 0:
+        print(" no json files lying around yet. run a " + C + "search" + R + ", " + C + "deep" + R + " or " + C + "vault" + R + " first, or " + C + "save" + R)
+        print()
+        return
+    print(" json files i can see in this folder:")
+    print()
+    n = 1
+    for name in files:
+        try:
+            size = os.path.getsize(name)
+        except:
+            size = 0
+        print("  " + C + str(n) + "." + R + " " + W + name + R + D + "  (" + str(size) + " bytes)" + R)
+        n = n + 1
+    print()
+    if rest != "":
+        pickn = rest
+    else:
+        try:
+            pickn = input("  which one? a number, or " + BOLD + "all" + R + " to read every file (enter = all) ").strip().lower()
+        except EOFError:
+            pickn = "all"
+        except KeyboardInterrupt:
+            print()
+            pickn = ""
+    if pickn == "":
+        pickn = "all"
+    if pickn == "all":
+        print(" " + D + "reading every file, one by one..." + R)
+        for name in files:
+            ai_read_one(name)
+        print()
+        print(" " + D + "that's everything on disk. the thinking part hooks in right here later" + R)
+        print()
+        return
+    num = ""
+    for ch in pickn:
+        if ch.isdigit():
+            num = num + ch
+    if num == "":
+        print(" " + tag("meh") + " that's not a number and not 'all'. nothing read")
+        print()
+        return
+    if int(num) < 1 or int(num) > len(files):
+        print(" " + tag("meh") + " no file with that number. pick between 1 and " + str(len(files)))
+        print()
+        return
+    ai_read_one(files[int(num) - 1])
+    print()
+    print(" " + D + "want the rest? " + C + "ai" + R + " " + D + "again and answer all" + R)
+    print()
+
+
 def save_results(rest):
     data = None
     for k in ("sweep", "phone", "email", "ip", "web", "deep"):
@@ -2007,6 +2180,8 @@ def run():
             elif cmd == "save": save_results(rest)
 
             elif cmd in ("vault", "store"): vault_cmd(rest)
+
+            elif cmd in ("ai", "brain"): cmd_ai(rest)
 
             elif cmd == "last": last_what()
 
